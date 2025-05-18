@@ -1,0 +1,41 @@
+@startuml Кинобездна - Целевая архитектура
+!includeurl https://raw.githubusercontent.com/RicardoNiepel/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(user, "Пользователь", "Пользователь онлайн-кинотеатра")
+
+System_Boundary(kinobezdna, "Кинобездна") {
+    Container(api_gateway, "API Gateway", "Kong", "Единая точка входа для всех клиентских запросов")
+    
+    Container(auth_service, "Сервис аутентификации", "Go", "Управление пользователями и сессиями")
+    Container(content_service, "Сервис контента", "Go", "Управление видео-контентом и стримингом")
+    Container(payment_service, "Платежный сервис", "Go", "Обработка платежей и подписок")
+    Container(metadata_service, "Сервис метаданных", "Go", "Управление метаданными фильмов")
+    Container(recommendation_service, "Сервис рекомендаций", "Python", "Персонализированные рекомендации контента")
+    Container(notification_service, "Сервис уведомлений", "Go", "Управление уведомлениями пользователей")
+    
+    ContainerDb(postgres, "PostgreSQL", "База данных", "Хранение основных данных")
+    ContainerDb(redis, "Redis", "Кэш", "Кэширование и хранение сессий")
+    ContainerDb(kafka, "Kafka", "Message Broker", "Асинхронное взаимодействие сервисов")
+}
+
+Rel(user, api_gateway, "Использует", "HTTPS")
+
+Rel(api_gateway, auth_service, "Маршрутизирует запросы", "REST")
+Rel(api_gateway, content_service, "Маршрутизирует запросы", "REST")
+Rel(api_gateway, payment_service, "Маршрутизирует запросы", "REST")
+Rel(api_gateway, metadata_service, "Маршрутизирует запросы", "REST")
+
+Rel(auth_service, postgres, "Читает/пишет", "SQL")
+Rel(content_service, postgres, "Читает/пишет", "SQL")
+Rel(payment_service, postgres, "Читает/пишет", "SQL")
+Rel(metadata_service, postgres, "Читает/пишет", "SQL")
+
+Rel(auth_service, redis, "Читает/пишет", "Redis Protocol")
+Rel(metadata_service, redis, "Читает/пишет", "Redis Protocol")
+
+Rel(content_service, kafka, "Публикует события", "Kafka Protocol")
+Rel(payment_service, kafka, "Публикует события", "Kafka Protocol")
+
+@enduml 

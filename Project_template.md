@@ -48,16 +48,9 @@
 
 
 ### 2. Kafka
- Вам как архитектуру нужно также проверить гипотезу насколько просто реализовать применение Kafka в данной архитектуре.
+[скриншот тестов](docs/images/2_tests.png)
 
-Для этого нужно сделать MVP сервис events, который будет при вызове API создавать и сам же читать сообщения в топике Kafka.
-
-    - Разработайте сервис на любом языке программирования с consumer'ами и producer'ами.
-    - Реализуйте простой API, при вызове которого будут создаваться события User/Payment/Movie и обрабатываться внутри сервиса с записью в лог
-    - Добавьте в docker-compose новый сервис, kafka там уже есть
-
-Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
-Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090 
+[скриншот состояния топиков Kafka из UI](docs/images/2_kafka-ui.png)
 
 # Задание 3
 
@@ -79,6 +72,8 @@ on:
     paths:
       - 'src/**'
       - '.github/workflows/docker-build-push.yml'
+      - 'src/microservices/proxy/**'
+      - 'src/microservices/events/**'
   release:
     types: [published]
 ```
@@ -105,6 +100,28 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Build and push proxy service
+        uses: docker/build-push-action@v2
+        with:
+          context: ./src/microservices/proxy
+          file: ./src/microservices/proxy/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/proxy:latest
+
+      - name: Build and push events service
+        uses: docker/build-push-action@v2
+        with:
+          context: ./src/microservices/events
+          file: ./src/microservices/events/Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/events:latest
+
+      - name: Run API tests
+        run: |
+          # Здесь добавьте команду для запуска ваших тестов
+          # Например, если у вас есть скрипт для тестирования:
+          npm install
+          npm run test:local
 ```
 Как только сборка отработает и в github registry появятся ваши образы, можно переходить к блоку настройки Kubernetes
 Успешным результатом данного шага является "зеленая" сборка и "зеленые" тесты
@@ -357,4 +374,8 @@ https://cinemaabyss.example.com/api/movies и приложите скриншо�
 ```bash
 kubectl delete all --all -n cinemaabyss
 kubectl delete namespace cinemaabyss
+```
+
+```bash
+kubectl get secret dockerconfigsecret -n cinemaabyss -o yaml
 ```
